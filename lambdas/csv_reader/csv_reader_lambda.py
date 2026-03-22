@@ -1,4 +1,5 @@
 import io
+import os
 import logging 
 from datetime import datetime, timezone
 import json
@@ -16,6 +17,7 @@ ALLOWED_EXTENSIONS = [".csv"]
 
 # boto3 with retry config
 S3_CLIENT = boto3.client("s3")
+LAMBDA_CLIENT = boto3.client("lambda")
 
 
 def read_csv_s3(bucketName: str, bucketKey: str)->tuple[io.BytesIO, int]:
@@ -105,11 +107,11 @@ def lambda_handler(event, context):
 
         logger.info(f"File processed successfully with details : {payload}")
 
-        return {
-            "statusCode"    : 200,
-            "desc"          : "Processing successful",
-            "payload"       : json.dumps(payload, default=str)
-        }
+        LAMBDA_CLIENT.invoke(
+            FunctionName=os.environ['ORCHESTRATOR_FUNCTION_NAME'],
+            InvocationType='Event',  # async - don't wait for response
+            Payload=json.dumps(event)
+        )
     
     except Exception as e:
         logger.error("Processing failed: %s", str(e), exc_info=True)
