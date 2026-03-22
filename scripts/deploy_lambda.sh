@@ -102,7 +102,7 @@ cp "$APP_ROOT/lambdas/orchestrator/pipeline_orchestrator.py" "$PACKAGE_DIR"
 
 (
   cd "$PACKAGE_DIR"
-  zip -rq "$ZIP_FILE_ORCHESTRATOR" .
+  zip -rq "$ZIP_FILE_ORCHESTRATOR" . --exclude "*/temp/*" --exclude "*/__pycache__/*"
   rm -f "$PACKAGE_DIR/pipeline_orchestrator.py"
 )
 
@@ -116,7 +116,7 @@ echo "PACKAGE DIRECTORY PATH: $PACKAGE_DIR"
 
 (
   cd "$PACKAGE_DIR/temp"
-  zip -rq "$ZIP_FILE_WORKER" .
+  zip -rq "$ZIP_FILE_WORKER" . --exclude "*/temp/*" --exclude "*/__pycache__/*"
 )
 
 

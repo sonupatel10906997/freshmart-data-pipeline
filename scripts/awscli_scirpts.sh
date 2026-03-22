@@ -30,6 +30,38 @@ aws s3api put-bucket-notification-configuration \
 EOF
 
 aws lambda get-policy \
-    --function-name "dev-labmda-func-orchestrator-735910967129" \
+    --function-name "dev-lambda-func-orchestrator-735910967129" \
     --region "us-east-1" \
     --output text
+
+
+# Remove existing permission
+aws lambda remove-permission \
+    --function-name "dev-lambda-func-orchestrator-735910967129" \
+    --statement-id "s3-trigger" \
+    --region "us-east-1"
+
+# Recreate with both source-arn and source-account
+aws lambda add-permission \
+    --function-name "dev-lambda-func-orchestrator-735910967129" \
+    --statement-id "s3-trigger" \
+    --action "lambda:InvokeFunction" \
+    --principal "s3.amazonaws.com" \
+    --source-arn "arn:aws:s3:::dev-freshdatamart-pipeline-source-735910967129" \
+    --source-account "735910967129" \
+    --region "us-east-1"
+
+sleep 10
+
+# Now retry notification
+aws s3api put-bucket-notification-configuration \
+    --bucket "dev-freshdatamart-pipeline-source-735910967129" \
+    --region "us-east-1" \
+    --notification-configuration '{
+        "LambdaFunctionConfigurations": [
+            {
+                "LambdaFunctionArn": "arn:aws:lambda:us-east-1:735910967129:function:dev-lambda-func-orchestrator-735910967129",
+                "Events": ["s3:ObjectCreated:*"]
+            }
+        ]
+    }'
