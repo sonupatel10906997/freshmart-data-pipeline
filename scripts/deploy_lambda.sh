@@ -109,7 +109,7 @@ cp "$APP_ROOT/lambdas/orchestrator/pipeline_orchestrator.py" "$PACKAGE_DIR"
 
 echo "Preparing deployment package for $FUNCTION_NAME_WORKER"
 # Install pandas and any future dependencies into the Lambda package directory.
-pip install --target "$PACKAGE_DIR/temp" -r "$APP_ROOT/transformer/requirements.txt"
+pip install --target "$PACKAGE_DIR/temp" -r "$APP_ROOT/lambdas/transformer/requirements.txt"
 cp "$APP_ROOT/lambdas/transformer/data_transformer_worker.py" "$PACKAGE_DIR/temp"
 
 (
