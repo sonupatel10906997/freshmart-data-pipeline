@@ -112,9 +112,11 @@ echo "Preparing deployment package for $FUNCTION_NAME_WORKER"
 pip install --target "$PACKAGE_DIR/temp" -r "$APP_ROOT/lambdas/transformer/requirements.txt"
 cp "$APP_ROOT/lambdas/transformer/data_transformer_worker.py" "$PACKAGE_DIR/temp"
 
+echo "PACKAGE DIRECTORY PATH: $PACKAGE_DIR"
+
 (
   cd "$PACKAGE_DIR/temp"
-  zip -rq "../$ZIP_FILE_WORKER" .
+  zip -rq "$ZIP_FILE_WORKER" .
 )
 
 
