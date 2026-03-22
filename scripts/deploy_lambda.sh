@@ -85,9 +85,7 @@ for bucket in "$S3_SOURCE_BUCKET" "$S3_TARGET_BUCKET"; do
         echo "Creating S3 bucket $bucket"
         aws s3api create-bucket \
             --bucket "$bucket" \
-            --region "$AWS_REGION" \
-            --create-bucket-configuration LocationConstraint="$AWS_REGION" >/dev/null
-        
+            --region "$AWS_REGION"        
         # Block all public access
         aws s3api put-public-access-block \
             --bucket "$bucket" \

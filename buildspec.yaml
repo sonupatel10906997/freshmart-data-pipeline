@@ -13,7 +13,7 @@ env:
 phases:
   install:
     runtime-versions:
-      python: 3.12
+      python: 3.13
     commands:
       # Print tool versions early so the build log shows the runtime used.
       - python --version
@@ -39,4 +39,4 @@ artifacts:
     # No Ops Changes New
     - deployment_package_orchestrator.zip
     - deployment_package_worker.zip
-    - buildspec.yml
+    - buildspec.yaml
