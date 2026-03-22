@@ -1,5 +1,6 @@
 import json
 import io
+import os
 import logging
 from datetime import datetime, timezone
 import boto3
@@ -10,7 +11,7 @@ logger.setLevel(logging.INFO)
 
 S3_CLIENT = boto3.client("s3")
 MAX_ROWS_PREVIEW = 5
-OUTPUT_BUCKET="freshmart-processed-data"
+WORKER_TARGET_BUCKET=os.environ["WORKER_TARGET_BUCKET"]
 ALLOWED_EXTENSIONS = {".csv"}
 
 def read_csv_s3( bucketName: str, bucketKey: str) ->io.BytesIO:
@@ -54,12 +55,12 @@ def lambda_handler(event, context):
             processed_df.to_csv(csvbuffer, index=False)
             filekey= f"sales_processed_{datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")}.csv"
             S3_CLIENT.put_object(
-                Bucket = OUTPUT_BUCKET,
+                Bucket = WORKER_TARGET_BUCKET,
                 Key= filekey,
                 Body=csvbuffer.getvalue()
             )
-            output.append(f"s3://{OUTPUT_BUCKET}/{filekey}")
-            logger.info(f"File Successfully processed at s3://{OUTPUT_BUCKET}/{filekey} ")
+            output.append(f"s3://{WORKER_TARGET_BUCKET}/{filekey}")
+            logger.info(f"File Successfully processed at s3://{WORKER_TARGET_BUCKET}/{filekey} ")
         
         return {
             "statusCode": 200,

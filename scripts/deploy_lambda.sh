@@ -285,7 +285,7 @@ if aws lambda get-function --function-name "$FUNCTION_NAME_WORKER" --region "$AW
     --runtime "$LAMBDA_RUNTIME" \
     --timeout "$LAMBDA_TIMEOUT" \
     --memory-size "$LAMBDA_MEMORY" \
-    --environment "Variables={MAX_PREVIEW_ROWS=5}" \
+    --environment "Variables={MAX_PREVIEW_ROWS=5,WORKER_TARGET_BUCKET=$S3_TARGET_BUCKET}" \
     --region "$AWS_REGION" >/dev/null
 
   echo "Waiting for configuration update to complete"
@@ -302,7 +302,7 @@ else
     --zip-file "fileb://$ZIP_FILE_WORKER" \
     --timeout "$LAMBDA_TIMEOUT" \
     --memory-size "$LAMBDA_MEMORY" \
-    --environment "Variables={MAX_PREVIEW_ROWS=5}" \
+    --environment "Variables={MAX_PREVIEW_ROWS=5, WORKER_TARGET_BUCKET=$S3_TARGET_BUCKET}" \
     --region "$AWS_REGION" >/dev/null
 
   echo "Waiting for new Lambda function to become active"
@@ -329,6 +329,9 @@ if ! aws lambda get-policy \
         --principal "s3.amazonaws.com" \
         --source-arn "arn:aws:s3:::${S3_SOURCE_BUCKET}" \
         --region "$AWS_REGION" >/dev/null
+
+    echo "Waiting for permission to propagate"
+    sleep 10
 else
     echo "S3 invoke permission already exists, skipping"
 fi
