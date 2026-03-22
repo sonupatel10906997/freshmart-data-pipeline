@@ -10,3 +10,8 @@ aws lambda get-function \
     --region "us-east-1" \
     --query 'Configuration.FunctionArn' \
     --output text
+
+aws lambda get-policy \
+    --function-name "dev-labmda-func-orchestrator-735910967129" \
+    --region "us-east-1" 2>/dev/null | grep -q "s3-trigger";
+
