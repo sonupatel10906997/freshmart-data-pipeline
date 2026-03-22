@@ -16,8 +16,8 @@ INLINE_DURABLE_EXECUTION_POLICY_FILE="$BUILD_DIR/lambda-execution-durable-policy
 
 
 # These values are shared by both environments.
-LAMBDA_HANDLER_ORCHESTRATOR="${LAMBDA_HANDLER:-pipeline_orchestrator.lambda_handler}"
-LAMBDA_HANDLER_WORKER="${LAMBDA_HANDLER:-data_transformer_worker.lambda_handler}"
+LAMBDA_HANDLER_ORCHESTRATOR="${LAMBDA_HANDLER_ORCHESTRATOR:-pipeline_orchestrator.lambda_handler}"
+LAMBDA_HANDLER_WORKER="${LAMBDA_HANDLER_WORKER:-data_transformer_worker.lambda_handler}"
 LAMBDA_RUNTIME="${LAMBDA_RUNTIME:-python3.13}"
 LAMBDA_TIMEOUT="${LAMBDA_TIMEOUT:-60}"
 LAMBDA_MEMORY="${LAMBDA_MEMORY:-512}"
