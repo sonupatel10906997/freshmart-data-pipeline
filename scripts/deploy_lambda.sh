@@ -316,18 +316,24 @@ echo "Deployment completed for Lambda function $FUNCTION_NAME_WORKER"
 # Add S3 trigger to orchestrator
 echo "Adding S3 trigger to $FUNCTION_NAME_ORCHESTRATOR"
 
-# Always attempt add-permission — succeeds first time, silently ignored on reruns via || true
-echo "Adding S3 invoke permission"
-aws lambda add-permission \
+if ! aws lambda get-policy \
     --function-name "$FUNCTION_NAME_ORCHESTRATOR" \
-    --statement-id "s3-trigger" \
-    --action "lambda:InvokeFunction" \
-    --principal "s3.amazonaws.com" \
-    --source-arn "arn:aws:s3:::${S3_SOURCE_BUCKET}" \
-    --region "$AWS_REGION" >/dev/null 2>&1 || true
-
-echo "Waiting for permission to propagate"
-sleep 10
+    --region "$AWS_REGION" 2>/dev/null | grep -q "s3-trigger"; then
+    
+    echo "Adding S3 invoke permission"
+    aws lambda add-permission \
+        --function-name "$FUNCTION_NAME_ORCHESTRATOR" \
+        --statement-id "s3-trigger" \
+        --action "lambda:InvokeFunction" \
+        --principal "s3.amazonaws.com" \
+        --source-arn "arn:aws:s3:::${S3_SOURCE_BUCKET}" \
+        --region "$AWS_REGION" >/dev/null
+    
+    echo "Waiting for permission to propagate"
+    sleep 10
+else
+    echo "S3 invoke permission already exists, skipping"
+fi
 
 # Only add bucket notification if it doesn't already exist
 EXISTING_NOTIFICATION=$(aws s3api get-bucket-notification-configuration \
