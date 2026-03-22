@@ -21,6 +21,7 @@ The key concept:
 
 import json
 import boto3
+import os
 from urlib.parse import unquote_plus
 from aws_durable_execution_sdk_python import (
     DurableContext,
@@ -32,6 +33,7 @@ from aws_durable_execution_sdk_python.config import CallbackConfig, Duration
 
 
 LAMBDA_CLIENT = boto3.client('lambda')
+WORKER_FUNCTION_NAME = os.environ["WORKER_FUNCTION_NAME"]
 
 
 @durable_step
@@ -42,7 +44,7 @@ def start_worker(stepContext: StepContext, event: dict, callback_id:str):
         "callback_id": callback_id
     }
     LAMBDA_CLIENT.invoke(
-        FunctionName="data_transformer_worker",
+        FunctionName=WORKER_FUNCTION_NAME,
         InvocationType="Event", ## "Event" = async, "RequestResponse" = sync
         Payload=json.dumps(worker_payload)
     )

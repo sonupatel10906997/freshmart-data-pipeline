@@ -98,7 +98,6 @@ done
 
 echo "Preparing deployment package for $FUNCTION_NAME_ORCHESTRATOR"
 # Install pandas and any future dependencies into the Lambda package directory.
-pip install --upgrade pip
 cp "$APP_ROOT/lambdas/orchestrator/pipeline_orchestrator.py" "$PACKAGE_DIR"
 
 (
@@ -109,6 +108,7 @@ cp "$APP_ROOT/lambdas/orchestrator/pipeline_orchestrator.py" "$PACKAGE_DIR"
 
 echo "Preparing deployment package for $FUNCTION_NAME_WORKER"
 # Install pandas and any future dependencies into the Lambda package directory.
+pip install --upgrade pip
 pip install --target "$PACKAGE_DIR/temp" -r "$APP_ROOT/lambdas/transformer/requirements.txt"
 cp "$APP_ROOT/lambdas/transformer/data_transformer_worker.py" "$PACKAGE_DIR/temp"
 
@@ -234,7 +234,7 @@ if aws lambda get-function --function-name "$FUNCTION_NAME_ORCHESTRATOR" --regio
     --runtime "$LAMBDA_RUNTIME" \
     --timeout "$LAMBDA_TIMEOUT" \
     --memory-size "$LAMBDA_MEMORY" \
-    --environment "Variables={MAX_PREVIEW_ROWS=5}" \
+    --environment "Variables={MAX_PREVIEW_ROWS=5,WORKER_FUNCTION_NAME=$FUNCTION_NAME_WORKER}" \
     --region "$AWS_REGION" >/dev/null
 
   echo "Waiting for configuration update to complete"
@@ -252,7 +252,7 @@ else
     --zip-file "fileb://$ZIP_FILE_ORCHESTRATOR" \
     --timeout "$LAMBDA_TIMEOUT" \
     --memory-size "$LAMBDA_MEMORY" \
-    --environment "Variables={MAX_PREVIEW_ROWS=5}" \
+    --environment "Variables={MAX_PREVIEW_ROWS=5,WORKER_FUNCTION_NAME=$FUNCTION_NAME_WORKER}" \
     --region "$AWS_REGION" >/dev/null
 
   echo "Waiting for new Lambda function to become active"
@@ -312,4 +312,53 @@ else
 fi
 
 echo "Deployment completed for Lambda function $FUNCTION_NAME_WORKER"
+
+# Add S3 trigger to orchestrator
+echo "Adding S3 trigger to $FUNCTION_NAME_ORCHESTRATOR"
+
+# Only add permission if it doesn't already exist
+if ! aws lambda get-policy \
+    --function-name "$FUNCTION_NAME_ORCHESTRATOR" \
+    --region "$AWS_REGION" 2>/dev/null | grep -q "s3-trigger"; then
+    
+    echo "Adding S3 invoke permission"
+    aws lambda add-permission \
+        --function-name "$FUNCTION_NAME_ORCHESTRATOR" \
+        --statement-id "s3-trigger" \
+        --action "lambda:InvokeFunction" \
+        --principal "s3.amazonaws.com" \
+        --source-arn "arn:aws:s3:::${S3_SOURCE_BUCKET}" \
+        --region "$AWS_REGION" >/dev/null
+else
+    echo "S3 invoke permission already exists, skipping"
+fi
+
+# Only add bucket notification if it doesn't already exist
+EXISTING_NOTIFICATION=$(aws s3api get-bucket-notification-configuration \
+    --bucket "$S3_SOURCE_BUCKET" \
+    --region "$AWS_REGION" 2>/dev/null)
+
+if echo "$EXISTING_NOTIFICATION" | grep -q "$FUNCTION_NAME_ORCHESTRATOR"; then
+    echo "Bucket notification already exists, skipping"
+else
+    echo "Adding bucket notification"
+    ORCHESTRATOR_ARN=$(aws lambda get-function \
+        --function-name "$FUNCTION_NAME_ORCHESTRATOR" \
+        --region "$AWS_REGION" \
+        --query 'Configuration.FunctionArn' \
+        --output text)
+
+    aws s3api put-bucket-notification-configuration \
+        --bucket "$S3_SOURCE_BUCKET" \
+        --region "$AWS_REGION" \
+        --notification-configuration "{
+            \"LambdaFunctionConfigurations\": [
+                {
+                    \"LambdaFunctionArn\": \"$ORCHESTRATOR_ARN\",
+                    \"Events\": [\"s3:ObjectCreated:*\"]
+                }
+            ]
+        }"
+    echo "Bucket notification added"
+fi
 
