@@ -85,8 +85,8 @@ for bucket in "$S3_SOURCE_BUCKET" "$S3_TARGET_BUCKET"; do
         echo "Creating S3 bucket $bucket"
         aws s3api create-bucket \
             --bucket "$bucket" \
-            --region "$AWS_REGION" \
-            --create-bucket-configuration LocationConstraint="$AWS_REGION" >/dev/null
+            --region "$AWS_REGION"
+            # --create-bucket-configuration LocationConstraint="$AWS_REGION" >/dev/null
         
         # Block all public access
         aws s3api put-public-access-block \
@@ -315,54 +315,54 @@ fi
 
 echo "Deployment completed for Lambda function $FUNCTION_NAME_WORKER"
 
-# Add S3 trigger to orchestrator
-echo "Adding S3 trigger to $FUNCTION_NAME_ORCHESTRATOR"
+# # Add S3 trigger to orchestrator
+# echo "Adding S3 trigger to $FUNCTION_NAME_ORCHESTRATOR"
 
-if ! aws lambda get-policy \
-    --function-name "$FUNCTION_NAME_ORCHESTRATOR" \
-    --region "$AWS_REGION" 2>/dev/null | grep -q "s3-trigger"; then
+# if ! aws lambda get-policy \
+#     --function-name "$FUNCTION_NAME_ORCHESTRATOR" \
+#     --region "$AWS_REGION" 2>/dev/null | grep -q "s3-trigger"; then
     
-    echo "Adding S3 invoke permission"
-    aws lambda add-permission \
-        --function-name "$FUNCTION_NAME_ORCHESTRATOR" \
-        --statement-id "s3-trigger" \
-        --action "lambda:InvokeFunction" \
-        --principal "s3.amazonaws.com" \
-        --source-arn "arn:aws:s3:::${S3_SOURCE_BUCKET}" \
-        --region "$AWS_REGION" >/dev/null
+#     echo "Adding S3 invoke permission"
+#     aws lambda add-permission \
+#         --function-name "$FUNCTION_NAME_ORCHESTRATOR" \
+#         --statement-id "s3-trigger" \
+#         --action "lambda:InvokeFunction" \
+#         --principal "s3.amazonaws.com" \
+#         --source-arn "arn:aws:s3:::${S3_SOURCE_BUCKET}" \
+#         --region "$AWS_REGION" >/dev/null
     
-    echo "Waiting for permission to propagate"
-    sleep 10
-else
-    echo "S3 invoke permission already exists, skipping"
-fi
+#     echo "Waiting for permission to propagate"
+#     sleep 10
+# else
+#     echo "S3 invoke permission already exists, skipping"
+# fi
 
-# Only add bucket notification if it doesn't already exist
-EXISTING_NOTIFICATION=$(aws s3api get-bucket-notification-configuration \
-    --bucket "$S3_SOURCE_BUCKET" \
-    --region "$AWS_REGION" 2>/dev/null)
+# # Only add bucket notification if it doesn't already exist
+# EXISTING_NOTIFICATION=$(aws s3api get-bucket-notification-configuration \
+#     --bucket "$S3_SOURCE_BUCKET" \
+#     --region "$AWS_REGION" 2>/dev/null)
 
-if echo "$EXISTING_NOTIFICATION" | grep -q "$FUNCTION_NAME_ORCHESTRATOR"; then
-    echo "Bucket notification already exists, skipping"
-else
-    echo "Adding bucket notification"
-    ORCHESTRATOR_ARN=$(aws lambda get-function \
-        --function-name "$FUNCTION_NAME_ORCHESTRATOR" \
-        --region "$AWS_REGION" \
-        --query 'Configuration.FunctionArn' \
-        --output text)
+# if echo "$EXISTING_NOTIFICATION" | grep -q "$FUNCTION_NAME_ORCHESTRATOR"; then
+#     echo "Bucket notification already exists, skipping"
+# else
+#     echo "Adding bucket notification"
+#     ORCHESTRATOR_ARN=$(aws lambda get-function \
+#         --function-name "$FUNCTION_NAME_ORCHESTRATOR" \
+#         --region "$AWS_REGION" \
+#         --query 'Configuration.FunctionArn' \
+#         --output text)
 
-    aws s3api put-bucket-notification-configuration \
-        --bucket "$S3_SOURCE_BUCKET" \
-        --region "$AWS_REGION" \
-        --notification-configuration "{
-            \"LambdaFunctionConfigurations\": [
-                {
-                    \"LambdaFunctionArn\": \"$ORCHESTRATOR_ARN\",
-                    \"Events\": [\"s3:ObjectCreated:*\"]
-                }
-            ]
-        }"
-    echo "Bucket notification added"
-fi
+#     aws s3api put-bucket-notification-configuration \
+#         --bucket "$S3_SOURCE_BUCKET" \
+#         --region "$AWS_REGION" \
+#         --notification-configuration "{
+#             \"LambdaFunctionConfigurations\": [
+#                 {
+#                     \"LambdaFunctionArn\": \"$ORCHESTRATOR_ARN\",
+#                     \"Events\": [\"s3:ObjectCreated:*\"]
+#                 }
+#             ]
+#         }"
+#     echo "Bucket notification added"
+# fi
 

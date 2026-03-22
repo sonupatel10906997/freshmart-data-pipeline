@@ -65,3 +65,26 @@ aws s3api put-bucket-notification-configuration \
             }
         ]
     }'
+
+
+
+# Clear all existing notifications from the bucket
+aws s3api put-bucket-notification-configuration \
+    --bucket "dev-freshdatamart-pipeline-source-735910967129-2" \
+    --region "us-east-2" \
+    --notification-configuration '{}'
+
+sleep 5
+
+# Now add the correct notification
+aws s3api put-bucket-notification-configuration \
+    --bucket "dev-freshdatamart-pipeline-source-735910967129-2" \
+    --region "us-east-2" \
+    --notification-configuration '{
+        "LambdaFunctionConfigurations": [
+            {
+                "LambdaFunctionArn": "arn:aws:lambda:us-east-2:735910967129:function:demo-durable-2",
+                "Events": ["s3:ObjectCreated:*"]
+            }
+        ]
+    }'
