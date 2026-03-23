@@ -366,3 +366,10 @@ echo "Deployment completed for Lambda function $FUNCTION_NAME_WORKER"
 #     echo "Bucket notification added"
 # fi
 
+if [-z "$DEPLOY_ENV"] then
+    echo "updating the target orchestrator as per env $DEPLOY_ENV : $FUNCTION_NAME_ORCHESTRATOR"
+    aws lambda update-function-configuration \
+    --function-name "func-bridge-csvreader-s3event-to-orchestrator" \
+    --environment "Variables={ORCHESTRATOR_FUNCTION_NAME=$FUNCTION_NAME_ORCHESTRATOR}" \
+    --region "$AWS_REGION" >/dev/null
+fi

@@ -67,7 +67,10 @@ def lambda_handler(event, context):
         LAMBDA_CLIENT.send_durable_execution_callback_success(
             CallbackId= callback_id,
             Result = json.dumps(output, default=str)
-        )        
+        ) 
+        return {
+            "status" : "callback_success sent"
+        }       
 
     except Exception as e:
         logger.error("Exception occured!:  %s", str(e), exc_info=True)
@@ -79,6 +82,10 @@ def lambda_handler(event, context):
                 'StackTrace': [str(e)]
             }
         )
+
+        return {
+            "status" : "callback_failure sent"
+        }  
         
 
 

@@ -1,3 +1,10 @@
+# switch lambda csv reader variable from dev to prod
+aws lambda update-function-configuration
+aws lambda update-function-configuration \
+    --function-name "func-bridge-csvreader-s3event-to-orchestrator" \
+    --environment "Variables={ORCHESTRATOR_FUNCTION_NAME=dev-labmda-func-orchestrator-735910967129}" \
+    --region "us-east-1" >/dev/null
+
 aws s3 mb s3://dev-freshmart-data-pipeline-raw-bucket-10906997
 # test-failed
 # test1 
