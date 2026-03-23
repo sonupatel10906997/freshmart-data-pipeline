@@ -183,7 +183,9 @@ else
   aws iam create-role \
     --role-name "$IAM_ROLE_NAME" \
     --assume-role-policy-document "file://$TRUST_POLICY_FILE" >/dev/null
-  
+    
+  sleep 10
+
   POLICIES=(
     "arn:aws:iam::aws:policy/AWSLambdaBasicExecutionRole"
     "arn:aws:iam::aws:policy/service-role/AWSLambdaRole"
