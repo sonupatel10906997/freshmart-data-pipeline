@@ -1,3 +1,4 @@
+aws s3 cp output.csv s3://dev-freshdatamart-pipeline-source-735910967129
 # switch lambda csv reader variable from dev to prod
 aws lambda update-function-configuration
 aws lambda update-function-configuration \
