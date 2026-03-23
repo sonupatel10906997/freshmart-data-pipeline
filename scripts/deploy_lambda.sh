@@ -187,7 +187,7 @@ else
   sleep 10
 
   POLICIES=(
-    "arn:aws:iam::aws:policy/AWSLambdaBasicExecutionRole"
+    "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
     "arn:aws:iam::aws:policy/service-role/AWSLambdaRole"
     )
 
