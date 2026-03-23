@@ -10,6 +10,7 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 S3_CLIENT = boto3.client("s3")
+LAMBDA_CLIENT = boto3.client("lambda")
 MAX_ROWS_PREVIEW = 5
 WORKER_TARGET_BUCKET=os.environ["WORKER_TARGET_BUCKET"]
 ALLOWED_EXTENSIONS = {".csv"}
@@ -30,14 +31,14 @@ def read_csv_s3( bucketName: str, bucketKey: str) ->io.BytesIO:
 def process_data(objcontent: io.BytesIO, s3file: str)->pd.DataFrame:
     logger.info(f"Processing file at {s3file}")
     sales_df = pd.read_csv(objcontent, header=0)
-    sales_valid_df = sales_df[sales_df["quantity"] > 0 or sales_df["unit_price"] > 0]
-    sales_valid_df["total_amount"] = sales_valid_df["quantity"] * sales_valid_df["unit_price"]
+    sales_valid_df = sales_df[(sales_df["Quantity"] > 0) | (sales_df["Unit_price"] > 0)]
+    sales_valid_df["total_amount"] = sales_valid_df["Quantity"] * sales_valid_df["Unit_price"]
     category_conditions = [
-        (sales_valid_df["rating"] > 7, 'High'),
-        (sales_valid_df["rating"] >= 5, 'Medium'),
-        (sales_valid_df["rating"] < 5, 'Low')
+        (sales_valid_df["Rating"] > 7, 'High'),
+        (sales_valid_df["Rating"] >= 5, 'Medium'),
+        (sales_valid_df["Rating"] < 5, 'Low')
     ]
-    sales_valid_df["rating_category"] = sales_valid_df["rating"].case_when(category_conditions)
+    sales_valid_df["Rating_category"] = sales_valid_df["Rating"].case_when(category_conditions)
     logger.info(f"File Processed Successfully {s3file}. Actual Records: {sales_df.shape[0]} | Output Records: {sales_valid_df.shape[0]} ")
     return sales_valid_df
 
@@ -45,8 +46,8 @@ def lambda_handler(event, context):
     try:
         logger.info(f"Received event from [Orchestrator] worker : {event}")
         callback_id= event["callback_id"]
-        bucketName = event["bucketName"]
-        bucketKeys = event["bucketKeys"]
+        bucketName = event["event"]["bucketName"]
+        bucketKeys = event["event"]["bucketKeys"]
         output = []
         for bucketKey in bucketKeys:
             filestream = read_csv_s3(bucketName, bucketKey)
@@ -62,19 +63,24 @@ def lambda_handler(event, context):
             output.append(f"s3://{WORKER_TARGET_BUCKET}/{filekey}")
             logger.info(f"File Successfully processed at s3://{WORKER_TARGET_BUCKET}/{filekey} ")
         
-        return {
-            "statusCode": 200,
-            "description": "Success",
-            "payload": json.dumps(output, default=str)
-        }
+        logger.info("Waking up Orchestrator with success callback")
+        LAMBDA_CLIENT.send_durable_execution_callback_success(
+            CallbackId= callback_id,
+            Result = json.dumps(output, default=str)
+        )        
 
     except Exception as e:
         logger.error("Exception occured!:  %s", str(e), exc_info=True)
-        return {
-            "statusCode": 500,
-            "description": "Failed",
-            "payload": json.dumps({"error": str(e)}, default=str)
-        }
+        logger.info("Waking up Orchestrator with failure callback")
+        LAMBDA_CLIENT.send_durable_execution_callback_failure(
+            CallbackId= callback_id,
+            Error = {
+                'ErrorMessage': 'Failed',
+                'StackTrace': [str(e)]
+            }
+        )
+        
+
 
 
 

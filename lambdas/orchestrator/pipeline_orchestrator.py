@@ -22,7 +22,7 @@ The key concept:
 import json
 import boto3
 import os
-from urlib.parse import unquote_plus
+from urllib.parse import unquote_plus
 from aws_durable_execution_sdk_python import (
     DurableContext,
     StepContext,
@@ -44,7 +44,7 @@ def start_worker(stepContext: StepContext, event: dict, callback_id:str):
         "callback_id": callback_id
     }
     LAMBDA_CLIENT.invoke(
-        FunctionName=WORKER_FUNCTION_NAME,
+        FunctionName=WORKER_FUNCTION_NAME + ':$LATEST',
         InvocationType="Event", ## "Event" = async, "RequestResponse" = sync
         Payload=json.dumps(worker_payload)
     )

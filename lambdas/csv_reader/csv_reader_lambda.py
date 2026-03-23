@@ -108,7 +108,7 @@ def lambda_handler(event, context):
         logger.info(f"File processed successfully with details : {payload}")
 
         LAMBDA_CLIENT.invoke(
-            FunctionName=os.environ['ORCHESTRATOR_FUNCTION_NAME'],
+            FunctionName=os.environ['ORCHESTRATOR_FUNCTION_NAME'] + ':$LATEST',
             InvocationType='Event',  # async - don't wait for response
             Payload=json.dumps(event)
         )
